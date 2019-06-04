@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Example how to use sam and go lambda functions
+# More info about Globals: https://github.com/dbgeek/ec2-start-stop/README.md
+Globals:
+  Function:
+    Timeout: 360
+
+Resources:
+  twitterBot:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: twitter-bot1/dist/twitter-bot1.zip
+      Handler: twitter-bot1
+      Runtime: go1.x
+      Role: !GetAtt twitterBotRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref twitterBotApi
+            Path: /twitter
+            Method: get
+
+  twitterBotApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: twitter-bot-Api
+      StageName: twitter
+      DefinitionBody:
+        swagger: 2.0
+        info:
+          title: !Ref AWS::StackName
+        paths:
+          /twitter:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri:
+                  !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${twitterBot.Arn}/invocations
+              responses: 
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Content-Type: "'application/json'"
+    
+  twitterBotRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "ssm"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "ssm:GetParameters"
+                  - "ssm:GetParameter"
+                Resource: "*"
+
+Outputs:
+  apiurl:
+    Description: API url
+    Value: !Sub https://${twitterBotApi}.execute-api.${AWS::Region}.amazonaws.com/Stage
