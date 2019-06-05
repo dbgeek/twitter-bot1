@@ -23,7 +23,7 @@ jobs:
     run_go_unit_tests:
         docker:
             - image: circleci/golang:1.12.4
-        working_directory: /Users/bjorn.ahl/src/github.com/dbgeek/twitter-bot1/lambda/twitter-bot1/twitter-bot1
+        working_directory: /go/src/github.com/dbgeek/twitter-bot1/lambda/twitter-bot1/twitter-bot1
         environment:
             GO111MODULE: "on"
         steps:
