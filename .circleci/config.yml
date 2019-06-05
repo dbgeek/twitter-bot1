@@ -43,6 +43,6 @@ workflows:
   build-and-deploy:
     jobs:
         - checkout_code
-        - run_go_unit_tests
+        - run_go_unit_tests:
             requires:
               - checkout_code
