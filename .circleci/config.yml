@@ -1,5 +1,8 @@
 
-version: 2
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@0.1.13
 
 jobs:
     checkout_code:
@@ -21,12 +24,6 @@ jobs:
         steps:
             - restore_cache:
                 key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
-            - restore_cache:
-                key: awscli-{{ checksum "/go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt" }}
-            - run:
-                name: Update PATH and Define Environment Variable at Runtime
-                command: |
-                    echo 'export PATH=$HOME/awscli/bin:$PATH' >> $BASH_ENV
             - run:
                 name: show aws cli version
                 command: |
@@ -68,10 +65,6 @@ workflows:
   build-and-deploy:
     jobs:
         - checkout_code
-        - awscli_dependencies:
-            requires:
-              - checkout_code
         - run_go_unit_tests:
             requires:
-              - awscli_dependencies
               - checkout_code
