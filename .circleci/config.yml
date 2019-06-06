@@ -28,8 +28,7 @@ jobs:
                 command: |
                     sudo apt-get install python-pip
             - aws-cli/install
-            - aws-cli/configure:
-                aws-region: eu-north-1
+            - aws-cli/configure
             - run:
                 name: show aws cli version
                 command: |
