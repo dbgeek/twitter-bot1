@@ -30,7 +30,7 @@ jobs:
             - run:
                 name: show aws cli version
                 command: |
-                    sudo apt-get install python-pip
+                    aws --version
             - run:
                 name: running go test
                 command: |

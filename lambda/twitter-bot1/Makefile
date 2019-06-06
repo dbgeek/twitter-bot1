@@ -39,7 +39,7 @@ build-all:
 		cd $(dir); GOOS=linux GOARCH=amd64 go build -o dist/$(dir) ./ ; \
 		cd dist; zip $(dir).zip $(dir)  \
 	)
-	$(baseDir)
+	cd $(baseDir)
 
 deploy:
 	$(call sam_package)
@@ -53,7 +53,7 @@ test-all:
 		cd $(dir); \
 		go test -v ; \
 	)
-	$(baseDir)
+	cd $(baseDir)
 
 delete-stack:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
