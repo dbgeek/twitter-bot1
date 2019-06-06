@@ -39,9 +39,9 @@ jobs:
             - restore_cache:
                 key: awscli-{{ checksum "/go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt" }}
             - run:
-                name: print python version
+                name: install virtualenv
                 command: |
-                    python --version
+                    pip install virtualenv
             - run:
                 name: setup dependencies
                 command: |
