@@ -23,7 +23,7 @@ jobs:
         steps:
             - restore_cache:
                 key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
-             - run:
+            - run:
                 name: install pip
                 command: |
                     sudo apt-get install python-pip
