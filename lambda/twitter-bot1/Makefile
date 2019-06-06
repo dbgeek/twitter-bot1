@@ -44,7 +44,6 @@ build-all:
 deploy:
 	$(call sam_package)
 	$(call sam_deploy)
-	make clean
 
 test-all:
 	@$(foreach dir,$(dirs), \

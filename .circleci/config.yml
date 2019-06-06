@@ -24,57 +24,43 @@ jobs:
             - restore_cache:
                 key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
             - run:
+                name: running go test
+                command: |
+                    make test-all
+    deploy:
+        docker:
+            - image: circleci/golang:1.12.4
+        working_directory: /go/src/github.com/dbgeek/twitter-bot1/lambda/twitter-bot1
+        environment:
+            GO111MODULE: "on"
+        steps:
+            - restore_cache:
+                key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
+            - run:
                 name: install pip
                 command: |
                     sudo apt-get install python-pip
             - aws-cli/install
             - aws-cli/configure
             - run:
-                name: show aws cli version
+                name: build
                 command: |
-                    aws --version
-            - run:
-                name: list s3
-                command: |
-                    aws s3 ls s3://ba78-twitter-lambda
+                    make build-all
             - run:
                 name: running go test
                 command: |
-                    make test-all
-    awscli_dependencies:
-        docker:
-            - image: circleci/golang:1.12.4
-        working_directory: ~/
-        steps:
-            - restore_cache:
-                key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
-            - restore_cache:
-                key: awscli-{{ checksum "/go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt" }}
-            - run:
-                name: install pip
-                command: |
-                    sudo apt-get install python-pip
-            - run:
-                name: install virtualenv
-                command: |
-                    pip install virtualenv
-            - run:
-                name: setup dependencies
-                command: |
-                    python -m virtualenv awscli
-                    . awscli/bin/activate
-                    pip install -r /go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt
-            - save_cache: # special step to save dependency cache
-                key: awscli-{{ checksum "/go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt" }}
-                paths:
-                    - "awscli"
-
+                    make deploy
+   
 workflows:
   version: 2
   build-and-deploy:
     jobs:
         - checkout_code
         - run_go_unit_tests:
+            requires:
+              - checkout_code
+        - deploy:
             context: aws
             requires:
               - checkout_code
+              - run_go_unit_tests
