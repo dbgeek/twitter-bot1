@@ -41,13 +41,13 @@ jobs:
             - run:
                 name: setup dependencies
                 command: |
-                    python -m venv venv
-                    . venv/bin/activate
+                    python -m virtualenv awscli
+                    . awscli/bin/activate
                     pip install -r /go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt
             - save_cache: # special step to save dependency cache
                 key: awscli-{{ checksum "/go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt" }}
                 paths:
-                    - "venv"
+                    - "awscli"
 
 workflows:
   version: 2
