@@ -60,6 +60,9 @@ workflows:
             requires:
               - checkout_code
         - deploy:
+            filters:
+            branches:
+              only: master
             context: aws
             requires:
               - checkout_code
