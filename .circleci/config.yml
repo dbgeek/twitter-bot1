@@ -1,5 +1,7 @@
+version: 2.1
 
-version: 2
+orbs:
+  aws-cli: circleci/aws-cli@0.1.13
 
 jobs:
     checkout_code:
@@ -21,57 +23,47 @@ jobs:
         steps:
             - restore_cache:
                 key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
-            - restore_cache:
-                key: awscli-{{ checksum "/go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt" }}
-            - run:
-                name: Update PATH and Define Environment Variable at Runtime
-                command: |
-                    echo 'export PATH=$HOME/awscli/bin:$PATH' >> $BASH_ENV
-            - run:
-                name: show aws cli version
-                command: |
-                    aws --version
             - run:
                 name: running go test
                 command: |
                     make test-all
-    awscli_dependencies:
+    deploy:
         docker:
             - image: circleci/golang:1.12.4
-        working_directory: ~/
+        working_directory: /go/src/github.com/dbgeek/twitter-bot1/lambda/twitter-bot1
+        environment:
+            GO111MODULE: "on"
         steps:
             - restore_cache:
                 key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
-            - restore_cache:
-                key: awscli-{{ checksum "/go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt" }}
             - run:
                 name: install pip
                 command: |
                     sudo apt-get install python-pip
+            - aws-cli/install
+            - aws-cli/configure
             - run:
-                name: install virtualenv
+                name: build
                 command: |
-                    pip install virtualenv
+                    make build-all
             - run:
-                name: setup dependencies
+                name: running go test
                 command: |
-                    python -m virtualenv awscli
-                    . awscli/bin/activate
-                    pip install -r /go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt
-            - save_cache: # special step to save dependency cache
-                key: awscli-{{ checksum "/go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt" }}
-                paths:
-                    - "awscli"
-
+                    make deploy
+   
 workflows:
   version: 2
   build-and-deploy:
     jobs:
         - checkout_code
-        - awscli_dependencies:
-            requires:
-              - checkout_code
         - run_go_unit_tests:
             requires:
-              - awscli_dependencies
               - checkout_code
+        - deploy:
+            filters:
+                branches:
+                    only: master
+            context: aws
+            requires:
+              - checkout_code
+              - run_go_unit_tests
