@@ -21,10 +21,16 @@ jobs:
         steps:
             - restore_cache:
                 key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                key: awscli-{{ checksum "/go/src/github.com/dbgeek/twitter-bot1/.circleci/requirements.txt" }}
             - run:
                 name: Update PATH and Define Environment Variable at Runtime
                 command: |
                     echo 'export PATH=$HOME/venv/bin:$PATH' >> $BASH_ENV
+            - run:
+                name: show aws cli version
+                command: |
+                    sudo apt-get install python-pip
             - run:
                 name: running go test
                 command: |
