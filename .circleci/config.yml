@@ -34,6 +34,10 @@ jobs:
                 command: |
                     aws --version
             - run:
+                name: list s3
+                command: |
+                    aws s3 ls s3://ba78-twitter-lambda
+            - run:
                 name: running go test
                 command: |
                     make test-all
