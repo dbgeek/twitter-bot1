@@ -28,6 +28,8 @@ jobs:
                 command: |
                     sudo apt-get install python-pip
             - aws-cli/install
+            - aws-cli/configure
+                aws-region: eu-north-1
             - run:
                 name: show aws cli version
                 command: |
@@ -70,5 +72,6 @@ workflows:
     jobs:
         - checkout_code
         - run_go_unit_tests:
+            context: aws
             requires:
               - checkout_code
