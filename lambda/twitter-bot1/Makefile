@@ -1,10 +1,13 @@
 PHONY: deps clean build
 
 ENVIRONMENT        ?= prod
-PROJECT            ?=  twitter-api
-STACK_NAME         ?=  stack-twitter-api
-ARTIFACTS_BUCKET   ?=  ba78-twitter-lambda
+PROJECT            ?= twitter-api
+STACK_NAME         ?= stack-twitter-api
+ARTIFACTS_BUCKET   ?= ba78-twitter-lambda
 AWS_DEFAULT_REGION ?= eu-north-1
+
+dirs = $(shell find * -type d -maxdepth 0)
+baseDir = $(shell pwd)
 
 sam_package = aws cloudformation package \
                 --template-file sam.yaml \
@@ -21,24 +24,36 @@ sam_deploy = aws cloudformation deploy \
 deps:
 	go get -u ./...
 
-clean: 
-	rm -rf ./twitter-bot1/dist
-	rm deploy.yaml
+clean-all:
+	@$(foreach dir,$(dirs), \
+		echo $(dir); \
+		cd $(baseDir); \
+		rm -rf ./$(dir)/dist \
+	)
+	cd $(baseDir)
 
-build:
-	mkdir -p twitter-bot1/dist
-	cd twitter-bot1; GOOS=linux GOARCH=amd64 go build -o dist/twitter-bot1 ./
-	cd twitter-bot1/dist; zip twitter-bot1.zip twitter-bot1
+build-all:
+	@$(foreach dir,$(dirs), \
+		echo $(dir); \
+		mkdir -p $(dir)/dist; \
+		cd $(dir); GOOS=linux GOARCH=amd64 go build -o dist/$(dir) ./ ; \
+		cd dist; zip $(dir).zip $(dir)  \
+	)
+	cd $(baseDir)
 
 deploy:
-	@make build
-	@make test
 	$(call sam_package)
 	$(call sam_deploy)
 	make clean
 
-test:
-	cd twitter-bot1; go test -v
+test-all:
+	@$(foreach dir,$(dirs), \
+		echo $(dir); \
+		cd $(baseDir); \
+		cd $(dir); \
+		go test -v ; \
+	)
+	cd $(baseDir)
 
 delete-stack:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
