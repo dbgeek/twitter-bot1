@@ -5,7 +5,6 @@ jobs:
     checkout_code:
         docker:
             - image: circleci/golang:1.12.4
-        resource_class: small
         steps:
             - checkout:
                 path:  /go/src/github.com/dbgeek/twitter-bot1
@@ -19,7 +18,6 @@ jobs:
         working_directory: /go/src/github.com/dbgeek/twitter-bot1/lambda/twitter-bot1
         environment:
             GO111MODULE: "on"
-        resource_class: small
         steps:
             - restore_cache:
                 key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
@@ -41,7 +39,6 @@ jobs:
         docker:
             - image: circleci/golang:1.12.4
         working_directory: ~/
-        resource_class: small
         steps:
             - restore_cache:
                 key: v1-repo-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
