@@ -6,13 +6,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var (
-	consumerSecret = "ss"
+	consumerSecret string
 )
 
 type (
@@ -20,6 +21,10 @@ type (
 		ResponseToken string `json:"response_token"`
 	}
 )
+
+func init() {
+	consumerSecret = os.Getenv("CONSUMER_SECRET_KEY")
+}
 
 // Handler main lambda function
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
