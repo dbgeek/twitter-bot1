@@ -7,6 +7,17 @@ Globals:
   Function:
     Timeout: 360
 
+Parameters:
+
+  ConsumerKey:
+      Description: 'Twitter consumer key'
+      Type: 'AWS::SSM::Parameter::Value<String>'
+      Default: CONSUMER_KEY
+  ConsumerSecretKey:
+      Description: 'Twitter consumer secret_key'
+      Type: 'AWS::SSM::Parameter::Value<String>'
+      Default: CONSUMER_SECRET_KEY
+
 Resources:
   twitterBot:
     Type: AWS::Serverless::Function
@@ -22,6 +33,10 @@ Resources:
             RestApiId: !Ref twitterBotApi
             Path: /twitter
             Method: get
+      Environment:
+        Variables:
+          CONSUMER_KEY: !Ref ConsumerKey
+          CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
 
   twitterBotApi:
     Type: AWS::Serverless::Api
@@ -35,6 +50,17 @@ Resources:
         paths:
           /twitter:
             get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri:
+                  !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${twitterBot.Arn}/invocations
+              responses: 
+                default:
+                  statusCode: "200"
+                  responseParameters:
+                    method.response.header.Content-Type: "'application/json'"
+            post:
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 type: aws_proxy
