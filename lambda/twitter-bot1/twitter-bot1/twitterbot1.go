@@ -23,7 +23,7 @@ type (
 )
 
 func init() {
-	consumerSecret := os.Getenv("CONSUMER_SECRET_KEY")
+	consumerSecret = os.Getenv("CONSUMER_SECRET_KEY")
 }
 
 // Handler main lambda function
