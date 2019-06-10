@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"testing"
+
+	"github.com/aws/aws-lambda-go/events"
 )
 
 func TestTwitterCrcCheck(t *testing.T) {
@@ -29,4 +31,19 @@ func TestTwitterCrcCheck(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTwitterVerifyRequest(t *testing.T) {
+	consumerSecret = "bbbbbb"
+	e := events.APIGatewayProxyRequest{
+		Headers: map[string]string{
+			"X-Twitter-Webhooks-Signature": "sha256=P/M6xYi2AxkjB8C36xD3AfjT5XuOx3dWgw9EVXCYA2U=",
+		},
+		Body: "html body",
+	}
+
+	if !verifyRequest(e) {
+		t.Fatalf("verifyRequest failed.")
+	}
+
 }

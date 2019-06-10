@@ -39,9 +39,20 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			Body:       fmt.Sprintf("%s", respCrcToken),
 			StatusCode: 200,
 		}, nil
+	} else if request.HTTPMethod == "POST" {
+		if verifyRequest(request) {
+			fmt.Printf("%s", request.Body)
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+			}, nil
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       fmt.Sprintf("bad crc\n"),
+			StatusCode: 400,
+		}, nil
+
 	}
 	return events.APIGatewayProxyResponse{
-		Body:       fmt.Sprintf("httpMethod: %s", request.HTTPMethod),
 		StatusCode: 200,
 	}, nil
 }
@@ -53,6 +64,20 @@ func newCrsToken(token string) crsToken {
 	return crsToken{
 		ResponseToken: fmt.Sprintf("sha256=%s", encoded),
 	}
+}
+
+func verifyRequest(event events.APIGatewayProxyRequest) bool {
+
+	crc := event.Headers["X-Twitter-Webhooks-Signature"]
+	h := hmac.New(sha256.New, []byte(consumerSecret))
+	h.Write([]byte(event.Body))
+
+	crcBase64, err := base64.StdEncoding.DecodeString(crc[7:])
+	if err != nil {
+		fmt.Printf("verifyRequest failed base64 decodeString with error: %v\n", err)
+		return false
+	}
+	return hmac.Equal(crcBase64, h.Sum(nil))
 }
 
 // String Stringers interface
