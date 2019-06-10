@@ -55,6 +55,20 @@ func newCrsToken(token string) crsToken {
 	}
 }
 
+func verifyRequest(event events.APIGatewayProxyRequest) bool {
+
+	crc := event.Headers["X-Twitter-Webhooks-Signature"]
+	h := hmac.New(sha256.New, []byte(consumerSecret))
+	h.Write([]byte(event.Body))
+
+	crcBase64, err := base64.StdEncoding.DecodeString(crc[7:])
+	if err != nil {
+		fmt.Printf("verifyRequest failed base64 decodeString with error: %v\n", err)
+		return false
+	}
+	return hmac.Equal(crcBase64, h.Sum(nil))
+}
+
 // String Stringers interface
 func (c crsToken) String() string {
 	return c.ResponseToken
