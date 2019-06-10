@@ -39,9 +39,20 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			Body:       fmt.Sprintf("%s", respCrcToken),
 			StatusCode: 200,
 		}, nil
+	} else if request.HTTPMethod == "POST" {
+		if verifyRequest(request) {
+			fmt.Printf("%s", request.Body)
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+			}, nil
+		}
+		return events.APIGatewayProxyResponse{
+			Body:       fmt.Sprintf("bad crc\n"),
+			StatusCode: 400,
+		}, nil
+
 	}
 	return events.APIGatewayProxyResponse{
-		Body:       fmt.Sprintf("httpMethod: %s", request.HTTPMethod),
 		StatusCode: 200,
 	}, nil
 }
