@@ -27,12 +27,18 @@ Resources:
       Runtime: go1.x
       Role: !GetAtt twitterBotRole.Arn
       Events:
-        Api:
-          Type: Api
-          Properties:
-            RestApiId: !Ref twitterBotApi
-            Path: /twitter
-            Method: get
+          GetEvent:
+            Type: Api
+            Properties:
+              RestApiId: !Ref twitterBotApi
+              Path: /twitter
+              Method: get
+          PostEvent:
+            Type: Api
+            Properties:
+              RestApiId: !Ref twitterBotApi
+              Path: /twitter
+              Method: post
       Environment:
         Variables:
           CONSUMER_KEY: !Ref ConsumerKey
