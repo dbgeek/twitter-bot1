@@ -12,6 +12,33 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
+type (
+	twitterPayload struct {
+		ForUserID           string `json:"for_user_id"`
+		DirectMessageEvents []struct {
+			Type            string `json:"type"`
+			ID              string `json:"id"`
+			CreateTimestamp string `json:"created_timestamp"`
+			MessageCreate   struct {
+				SenderID    string `json:"sender_id"`
+				MessageData struct {
+					Text       string   `json:"text"`
+					Entities   struct{} `json:"entities"`
+					Attachment struct {
+						Type  string `json:"type"`
+						Media struct {
+							ID         int64  `json:"id"`
+							MediaURL   string `json:"media_url"`
+							URL        string `json:"url"`
+							DisplayURL string `json:"display_url"`
+						} `json:"media"`
+					} `json:"attachment"`
+				} `json:"message_data"`
+			} `json:"message_create"`
+		} `json:"direct_message_events"`
+	}
+)
+
 var (
 	consumerSecret string
 )
@@ -41,7 +68,12 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		}, nil
 	} else if request.HTTPMethod == "POST" {
 		if verifyRequest(request) {
-			fmt.Printf("%s", request.Body)
+			err := postMethod(request)
+			if err != nil {
+				return events.APIGatewayProxyResponse{
+					StatusCode: 500,
+				}, nil
+			}
 			return events.APIGatewayProxyResponse{
 				StatusCode: 200,
 			}, nil
@@ -55,6 +87,19 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
 	}, nil
+}
+
+func postMethod(request events.APIGatewayProxyRequest) error {
+	var payLoad twitterPayload
+
+	err := json.Unmarshal([]byte(request.Body), &payLoad)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("payLoad: %v\n", payLoad)
+
+	return nil
 }
 
 func newCrsToken(token string) crsToken {
