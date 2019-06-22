@@ -35,9 +35,10 @@ clean-all:
 build-all:
 	@$(foreach dir,$(dirs), \
 		echo $(dir); \
+		cd $(baseDir); \
 		mkdir -p $(dir)/dist; \
 		cd $(dir); GOOS=linux GOARCH=amd64 go build -o dist/$(dir) ./ ; \
-		cd dist; zip $(dir).zip $(dir)  \
+		cd dist; zip $(dir).zip $(dir);  \
 	)
 	cd $(baseDir)
 
