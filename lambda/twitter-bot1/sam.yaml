@@ -33,7 +33,19 @@ Resources:
               RestApiId: !Ref twitterBotApi
               Path: /twitter
               Method: get
-          PostEvent:
+      Environment:
+        Variables:
+          CONSUMER_KEY: !Ref ConsumerKey
+          CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
+  twitterWebHookPayload:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: twitter-webhook-payload/dist/twitter-webhook-payload.zip
+      Handler: twitter-webhook-payload
+      Runtime: go1.x
+      Role: !GetAtt twitterBotRole.Arn
+      Events:
+          GetEvent:
             Type: Api
             Properties:
               RestApiId: !Ref twitterBotApi
@@ -43,7 +55,7 @@ Resources:
         Variables:
           CONSUMER_KEY: !Ref ConsumerKey
           CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
-
+        
   twitterBotApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -67,17 +79,68 @@ Resources:
                   responseParameters:
                     method.response.header.Content-Type: "'application/json'"
             post:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri:
-                  !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${twitterBot.Arn}/invocations
-              responses: 
-                default:
-                  statusCode: "200"
-                  responseParameters:
-                    method.response.header.Content-Type: "'application/json'"
-    
+                  produces:
+                  - "application/json"
+                  responses:
+                    "200":
+                      description: "200 response"
+                      schema:
+                        $ref: "#/definitions/Empty"
+                      headers:
+                         Access-Control-Allow-Headers:
+                          type: "string"
+                  security: []
+                  x-amazon-apigateway-integration:
+                    responses:
+                      default:
+                        statusCode: "200"
+                        responseTemplates:
+                          application/json:
+                            !Sub
+                              |-
+                                {
+                                    "token": $input.json('$.executionArn').split(':')[7].replace('"', "")
+                                }
+                        headers:
+                         Access-Control-Allow-Headers:
+                          type: "'*'"
+                    passthroughBehavior: "WHEN_NO_TEMPLATES"
+                    httpMethod: "POST"
+                    type: "aws"
+                    credentials: !GetAtt APIGatewayRole.Arn
+                    uri: "arn:aws:apigateway:eu-north-1:states:action/StartExecution"
+                    requestTemplates:
+                      application/json:
+                        !Sub
+                          |-
+                            #set($twitterPayload = $util.escapeJavaScript($input.json('$')))
+                            {
+                              "input": "{ \"rawinput\": \"$util.escapeJavaScript($util.base64Encode($input.body))\", \"webhooks-signature\": \"$input.params('X-Twitter-Webhooks-Signature')\", \"twitter-payload\": $twitterPayload }",
+                              "name": "$context.requestId",
+                              "stateMachineArn": "${StateMachineTwitter}"
+                            }
+
+  APIGatewayRole: 
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              Service: 
+                - "apigateway.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns: 
+        - "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+        - "arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess"
+  
+  Account: 
+    Type: AWS::ApiGateway::Account
+    Properties: 
+      CloudWatchRoleArn: !GetAtt APIGatewayRole.Arn
+
   twitterBotRole:
     Type: AWS::IAM::Role
     Properties:
@@ -104,6 +167,48 @@ Resources:
                 Action:
                   - "ssm:GetParameters"
                   - "ssm:GetParameter"
+                Resource: "*"
+
+  StateMachineTwitter:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      DefinitionString:
+        !Sub
+          - |-
+            {
+              "Comment": "A Hello World example",
+              "StartAt": "HelloWorld",
+              "States": {
+                "HelloWorld": {
+                  "Type": "Task",
+                  "Resource": "${lambdaArn}",
+                  "End": true
+                }
+              }
+            }
+          - {lambdaArn: !GetAtt [ twitterWebHookPayload, Arn ]}
+      RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
+
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
                 Resource: "*"
 
 Outputs:
