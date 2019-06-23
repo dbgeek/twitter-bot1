@@ -17,6 +17,14 @@ Parameters:
       Description: 'Twitter consumer secret_key'
       Type: 'AWS::SSM::Parameter::Value<String>'
       Default: CONSUMER_SECRET_KEY
+  OauthToken:
+      Description: 'Twitter consumer key'
+      Type: 'AWS::SSM::Parameter::Value<String>'
+      Default: OAUTH_TOKEN
+  OauthSecret:
+      Description: 'Twitter consumer secret_key'
+      Type: 'AWS::SSM::Parameter::Value<String>'
+      Default: OAUTH_SECRET
 
 Resources:
   twitterBot:
@@ -37,6 +45,7 @@ Resources:
         Variables:
           CONSUMER_KEY: !Ref ConsumerKey
           CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
+
   twitterWebHookPayload:
     Type: AWS::Serverless::Function
     Properties:
@@ -55,6 +64,20 @@ Resources:
         Variables:
           CONSUMER_KEY: !Ref ConsumerKey
           CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
+
+  twitterGetPicture:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: twitter-get-picture/dist/twitter-get-picture.zip
+      Handler: twitter-get-picture
+      Runtime: go1.x
+      Role: !GetAtt twitterBotRole.Arn
+      Environment:
+        Variables:
+          CONSUMER_KEY: !Ref ConsumerKey
+          CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
+          OAUTH_TOKEN: !Ref OauthToken
+          OAUTH_SECRET: !Ref OauthSecret
         
   twitterBotApi:
     Type: AWS::Serverless::Api
@@ -177,16 +200,36 @@ Resources:
           - |-
             {
               "Comment": "A Hello World example",
-              "StartAt": "HelloWorld",
+              "StartAt": "TwitterWebHook",
               "States": {
-                "HelloWorld": {
+                "TwitterWebHook": {
                   "Type": "Task",
-                  "Resource": "${lambdaArn}",
-                  "End": true
+                  "Resource": "${twitterWebHookPayloadArn}",
+                  "Next": "CheckMedia"
+                },
+                "CheckMedia": {
+                  "Type": "Choice",
+                  "Choices": [{
+                  "Variable": "$.picture-exists",
+                  "BooleanEquals": true,
+                  "Next": "GetPicture"
+                  }],
+                  "Default": "Done"
+                },
+                "GetPicture": {
+                  "Type": "Task",
+                  "Resource": "${twitterGetPictureArn}",
+                  "Next": "Done"
+                },
+                "Done": {
+                  "Type": "Succeed"
                 }
               }
             }
-          - {lambdaArn: !GetAtt [ twitterWebHookPayload, Arn ]}
+          - {
+              twitterWebHookPayloadArn: !GetAtt [ twitterWebHookPayload, Arn ],
+              twitterGetPictureArn: !GetAtt [ twitterGetPicture, Arn ]
+            }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
 
   StatesExecutionRole:
