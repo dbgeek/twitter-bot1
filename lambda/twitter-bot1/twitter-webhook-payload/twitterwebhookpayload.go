@@ -57,6 +57,7 @@ type (
 	// Event to send between step functions
 	Event struct {
 		DirectMessageEvents []DirectMessageEvent `json:"direct-message-events"`
+		PictureExists       bool                 `json:"picture-exists"`
 	}
 )
 
@@ -70,8 +71,11 @@ func init() {
 
 func newEvent(payload twitterPayload) Event {
 	directMessageEvents := make([]DirectMessageEvent, 0)
-
+	pictureExists := false
 	for _, v := range payload.TwitterPayLoad.DirectMessageEvents {
+		if v.MessageCreate.MessageData.Attachment.Media.MediaURL != "" {
+			pictureExists = true
+		}
 		d := DirectMessageEvent{
 			MediaID:  v.MessageCreate.MessageData.Attachment.Media.ID,
 			URL:      v.MessageCreate.MessageData.Attachment.Media.URL,
@@ -83,6 +87,7 @@ func newEvent(payload twitterPayload) Event {
 
 	return Event{
 		DirectMessageEvents: directMessageEvents,
+		PictureExists:       pictureExists,
 	}
 }
 
