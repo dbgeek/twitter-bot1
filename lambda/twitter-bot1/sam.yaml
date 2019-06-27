@@ -78,6 +78,7 @@ Resources:
           CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
           OAUTH_TOKEN: !Ref OauthToken
           OAUTH_SECRET: !Ref OauthSecret
+          PICTURE_BUCKET: !Ref PictureBucket
         
   twitterBotApi:
     Type: AWS::Serverless::Api
@@ -191,6 +192,17 @@ Resources:
                   - "ssm:GetParameters"
                   - "ssm:GetParameter"
                 Resource: "*"
+        - PolicyName: "s3"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:PutObject"
+                  - "s3:GetObject"
+                  - "s3:DeleteObject"
+                Resource: "*"
 
   StateMachineTwitter:
     Type: "AWS::StepFunctions::StateMachine"
@@ -253,6 +265,9 @@ Resources:
                 Action:
                   - "lambda:InvokeFunction"
                 Resource: "*"
+  
+  PictureBucket:
+    Type: AWS::S3::Bucket
 
 Outputs:
   apiurl:
