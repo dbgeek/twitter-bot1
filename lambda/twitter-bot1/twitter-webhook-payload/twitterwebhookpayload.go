@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
@@ -47,12 +48,13 @@ type (
 	}
 	// DirectMessageEvent payload from twitter
 	DirectMessageEvent struct {
-		MediaID     int64  `json:"mediaID"`
-		MediaURL    string `json:"media_url"`
-		URL         string `json:"url"`
-		MessageText string `json:"message_text"`
-		SenderID    string `json:"sender_id"`
-		Text        string `json:"text"`
+		CreateTimestamp int64  `json:"create_timestamp"`
+		MediaID         string `json:"mediaID"`
+		MediaURL        string `json:"media_url"`
+		URL             string `json:"url"`
+		MessageText     string `json:"message_text"`
+		SenderID        string `json:"sender_id"`
+		Text            string `json:"text"`
 	}
 	// Event to send between step functions
 	Event struct {
@@ -76,11 +78,18 @@ func newEvent(payload twitterPayload) Event {
 		if v.MessageCreate.MessageData.Attachment.Media.MediaURL != "" {
 			pictureExists = true
 		}
+
+		createTime, err := strconv.ParseInt(v.CreateTimestamp, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+
 		d := DirectMessageEvent{
-			MediaID:  v.MessageCreate.MessageData.Attachment.Media.ID,
-			URL:      v.MessageCreate.MessageData.Attachment.Media.URL,
-			MediaURL: v.MessageCreate.MessageData.Attachment.Media.MediaURL,
-			Text:     v.MessageCreate.MessageData.Text,
+			CreateTimestamp: createTime,
+			MediaID:         strconv.FormatInt(v.MessageCreate.MessageData.Attachment.Media.ID, 10),
+			URL:             v.MessageCreate.MessageData.Attachment.Media.URL,
+			MediaURL:        v.MessageCreate.MessageData.Attachment.Media.MediaURL,
+			Text:            v.MessageCreate.MessageData.Text,
 		}
 		directMessageEvents = append(directMessageEvents, d)
 	}
