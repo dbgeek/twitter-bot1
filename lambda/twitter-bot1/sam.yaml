@@ -80,6 +80,19 @@ Resources:
           OAUTH_SECRET: !Ref OauthSecret
           PICTURE_BUCKET: !Ref PictureBucket
         
+  twitterRekognition:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: twitter-rekognition/dist/twitter-rekognition.zip
+      Handler: twitter-rekognition
+      Runtime: go1.x
+      Role: !GetAtt twitterBotRole.Arn
+      Environment:
+        Variables:
+          CONSUMER_KEY: !Ref ConsumerKey
+          CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
+          OAUTH_TOKEN: !Ref OauthToken
+          OAUTH_SECRET: !Ref OauthSecret
   twitterBotApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -181,6 +194,7 @@ Resources:
       Path: "/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonRekognitionReadOnlyAccess
       Policies:
         - PolicyName: "ssm"
           PolicyDocument:
