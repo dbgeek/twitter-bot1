@@ -121,9 +121,10 @@ func Handler(event Event) (OutEvent, error) {
 		destKey := fmt.Sprintf("%s/%s.jpg", strCreateTime, v.MediaID)
 		_, err = s3srvc.PutObject(
 			&s3.PutObjectInput{
-				Bucket: aws.String(destBucket),
-				Body:   bytes.NewReader(body),
-				Key:    aws.String(destKey),
+				Bucket:      aws.String(destBucket),
+				Body:        bytes.NewReader(body),
+				Key:         aws.String(destKey),
+				ContentType: aws.String("image/jpeg"),
 			},
 		)
 		if err != nil {
