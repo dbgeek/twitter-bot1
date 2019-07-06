@@ -90,6 +90,7 @@ func newEvent(payload twitterPayload) Event {
 			URL:             v.MessageCreate.MessageData.Attachment.Media.URL,
 			MediaURL:        v.MessageCreate.MessageData.Attachment.Media.MediaURL,
 			Text:            v.MessageCreate.MessageData.Text,
+			SenderID:        v.MessageCreate.SenderID,
 		}
 		directMessageEvents = append(directMessageEvents, d)
 	}
