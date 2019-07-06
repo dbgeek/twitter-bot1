@@ -79,7 +79,7 @@ Resources:
           OAUTH_TOKEN: !Ref OauthToken
           OAUTH_SECRET: !Ref OauthSecret
           PICTURE_BUCKET: !Ref PictureBucket
-        
+
   twitterRekognition:
     Type: AWS::Serverless::Function
     Properties:
@@ -260,6 +260,16 @@ Resources:
                 "GetPicture": {
                   "Type": "Task",
                   "Resource": "${twitterGetPictureArn}",
+                  "Next": "FaceRekognition"
+                },
+                "FaceRekognition": {
+                  "Type": "Task",
+                  "Resource": "${twitterRekognitionArn}",
+                  "Next": "TwitterDmReply"
+                },
+                "TwitterDmReply": {
+                  "Type": "Task",
+                  "Resource": "${twitterReplyArn}",
                   "Next": "Done"
                 },
                 "Done": {
@@ -269,7 +279,9 @@ Resources:
             }
           - {
               twitterWebHookPayloadArn: !GetAtt [ twitterWebHookPayload, Arn ],
-              twitterGetPictureArn: !GetAtt [ twitterGetPicture, Arn ]
+              twitterGetPictureArn: !GetAtt [ twitterGetPicture, Arn ],
+              twitterRekognitionArn: !GetAtt [ twitterRekognition, Arn ],
+              twitterReplyArn: !GetAtt [ twitterReply, Arn ]
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
 
