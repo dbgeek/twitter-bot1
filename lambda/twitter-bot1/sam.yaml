@@ -93,6 +93,21 @@ Resources:
           CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
           OAUTH_TOKEN: !Ref OauthToken
           OAUTH_SECRET: !Ref OauthSecret
+
+  twitterReply:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: twitter-reply/dist/twitter-reply.zip
+      Handler: twitter-reply
+      Runtime: go1.x
+      Role: !GetAtt twitterBotRole.Arn
+      Environment:
+        Variables:
+          CONSUMER_KEY: !Ref ConsumerKey
+          CONSUMER_SECRET_KEY: !Ref ConsumerSecretKey
+          OAUTH_TOKEN: !Ref OauthToken
+          OAUTH_SECRET: !Ref OauthSecret
+
   twitterBotApi:
     Type: AWS::Serverless::Api
     Properties:
