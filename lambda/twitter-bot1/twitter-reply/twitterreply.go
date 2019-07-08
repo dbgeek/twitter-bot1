@@ -119,13 +119,14 @@ func Handler(events Event) error {
 		}
 		fs = append(fs, f)
 	}
-
-	replyMessage := fmt.Sprintf(`Only return first face it detect
-face:0, 
+	var replyMessage string
+	for i, v := range fs {
+		replyMessage += fmt.Sprintf(`face:%d, 
 age between %d and %d
 gender: %s
-emotion: %s`, fs[0].ageLow, fs[0].ageHigh, fs[0].gender, fs[0].emotions)
-
+emotion: %s
+`, i, v.ageLow, v.ageHigh, v.gender, v.emotions)
+	}
 	replyEvent := DMReplyEvent{
 		Event: ReplyEvent{
 			Type: "message_create",

@@ -106,6 +106,7 @@ func Handler(event twitterPayload) (Event, error) {
 	body, err := base64.StdEncoding.DecodeString(event.RawInput)
 	if err != nil {
 		fmt.Printf("DecodeString failed with error: %v\n", err)
+		return Event{}, fmt.Errorf("Failed encoding raw input payload in event")
 	}
 
 	if !verifyRequest(event.XTwitterWebhooksSignature, body) {
