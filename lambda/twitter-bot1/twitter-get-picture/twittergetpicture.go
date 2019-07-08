@@ -102,35 +102,22 @@ func init() {
 
 // Handler function for the lambda
 func Handler(event Event) (OutEvent, error) {
-	//directMessageEvents := make([]DirectMessageEvent, 0)
 
 	outDirectMessageEvent := make([]OutDirectMessageEvent, 0)
 	for _, v := range event.DirectMessageEvents {
 
-		resp, err := client.Get(v.MediaURL)
+		image, err := getImage(v.MediaURL)
 		if err != nil {
-			fmt.Printf("Failed to get picture fron twitter api. Got error: %v\n", err)
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
+			return OutEvent{}, err
 		}
 
 		createTime := time.Unix(v.CreateTimestamp/1000, 0)
-		strCreateTime := createTime.Format("2006/01/02")
-		destKey := fmt.Sprintf("%s/%s.jpg", strCreateTime, v.MediaID)
-		_, err = s3srvc.PutObject(
-			&s3.PutObjectInput{
-				Bucket:      aws.String(destBucket),
-				Body:        bytes.NewReader(body),
-				Key:         aws.String(destKey),
-				ContentType: aws.String("image/jpeg"),
-			},
-		)
+		s3Prefix := createTime.Format("2006/01/02")
+		imageName := fmt.Sprintf("%s.jpg", v.MediaID)
+		err = putImageS3(destBucket, s3Prefix, imageName, image)
 		if err != nil {
-			fmt.Printf("Failed to put object got error: %v\n", err)
+			return OutEvent{}, err
 		}
-		resp.Body.Close()
 
 		o := OutDirectMessageEvent{
 			CreateTimestamp: v.CreateTimestamp,
@@ -141,7 +128,7 @@ func Handler(event Event) (OutEvent, error) {
 			SenderID:        v.SenderID,
 			Text:            v.Text,
 			S3bucket:        destBucket,
-			S3path:          destKey,
+			S3path:          fmt.Sprintf("%s/%s", s3Prefix, imageName),
 		}
 		outDirectMessageEvent = append(outDirectMessageEvent, o)
 	}
@@ -149,6 +136,36 @@ func Handler(event Event) (OutEvent, error) {
 	return OutEvent{
 		DirectMessageEvents: outDirectMessageEvent,
 	}, nil
+}
+func putImageS3(bucket string, prefix string, fileName string, image *[]byte) error {
+
+	_, err := s3srvc.PutObject(
+		&s3.PutObjectInput{
+			Bucket:      aws.String(bucket),
+			Body:        bytes.NewReader(*image),
+			Key:         aws.String(fmt.Sprintf("%s/%s", prefix, fileName)),
+			ContentType: aws.String("image/jpeg"),
+		},
+	)
+	if err != nil {
+		fmt.Printf("Failed to put object got error: %v\n", err)
+		return fmt.Errorf("PUT_IMAGE_S3_FAILED")
+	}
+
+	return nil
+}
+func getImage(URL string) (*[]byte, error) {
+	resp, err := client.Get(URL)
+	if err != nil {
+		fmt.Printf("Failed to get picture fron twitter api. Got error: %v\n", err)
+		return nil, fmt.Errorf("FAILED_GET_IMAGE")
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("FAILED_READALL_BODY")
+	}
+	return &body, nil
 }
 
 func main() {
